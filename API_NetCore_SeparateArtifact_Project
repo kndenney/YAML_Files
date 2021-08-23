@@ -1,0 +1,66 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+# pipeline variables
+variables:
+  descriptionOfPackage: '"Dapper Helper library which provides Dapper quick helper methods to execute various SQL methods or queries etc."'
+  sdkVersion: '2.2'
+# leave these alone unless you know what you are doing:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  projectName: 'Name of Project Goes Here'
+  majorMinorVersion: 1.0
+  # semanticVersion counter is automatically incremented by one in each execution of pipeline
+  # second parameter is seed value to reset to every time the referenced majorMinorVersion is changed
+  semanticVersion: $[counter(variables['majorMinorVersion'], 0)]
+#  name: semanticVersion.$(Date:yyyyMMdd)$(Rev:.r)
+name: $(TeamProject)_$(MajorVersion).$(MinorVersion).$(BuildID)-$(rev:.r) #$(Build.DefinitionName)-$(date:yyyyMMdd)$(rev:.r)
+
+steps:
+- task: DotNetCoreInstaller@2
+  displayName: 'Install .NET Core SDK'
+
+#- task: NuGetToolInstaller@1
+#  displayName: 'Install NuGet Tooling'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore Packages'
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+    feedsToUse: 'select'
+    vstsFeed: 'Name of Project/Feed Name.Packages' # this should be the Project Name/Feed name
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build Package'
+  inputs:
+    command: 'build'
+    projects: '**/*.csproj'
+    arguments: '-c Release --no-restore'
+    versioningScheme: '-c Release --no-restore'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Package Up for Nuget Repository'
+  inputs:
+    command: 'pack'
+    #configuration: 'release'
+    #packagesToPack: '**/*.csproj'
+    configuration: $(BuildConfiguration)
+    packagesToPack: '**/$(ProjectName)*.csproj'
+    buildProperties: 'description=$(descriptionOfPackage)";authors="Author Organization. - Name of Project Project."'
+    versioningScheme: byBuildNumber # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/build/dotnet-core-cli?view=azure-devops#yaml-snippet
+    nobuild: true
+    packDirectory: '$(build.artifactStagingDirectory)'
+  
+- task: DotNetCoreCLI@2
+  displayName: 'Push to Nuget Channel'
+  inputs:
+    command: 'push'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: 'Feed Name/Project Name'
+  

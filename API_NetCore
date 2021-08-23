@@ -1,0 +1,68 @@
+# if we were to manually create a pipeline through VS using the Continuous Delivery
+# the steps would be:
+# 1. Restore Net Core
+# 2. Build Net Core
+# 3. Test Net Core - for test projects
+# 4. Publish Net Core
+# 5. Publish Build Artifact 
+# So lets try and re-create that with the YAML stuffs
+
+trigger:
+ - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+#install .net sdk 
+- task: UseDotNet@2
+  displayName: Install .NET 5 SDK
+  inputs:
+    version: '5.0.x'
+    packageType: 'sdk'
+    
+
+#restore nuget packages from build
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: restore
+    projects: '**/*.csproj'
+    feedsToUse: 'select'
+    vstsFeed: '8a9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx1ac873a' --Guid of VSTS Feed goes here
+
+#perform build action
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    projects: '$(Parameters.RestoreBuildProjects)'
+    arguments: '--configuration $(BuildConfiguration)'
+
+#perform build of test projects
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    projects: '$(Parameters.TestProjects)'
+    arguments: '--configuration $(BuildConfiguration)'
+
+#perform publish
+- task: DotNetCoreCLI@2
+  displayName: Publish
+  inputs:
+    command: publish
+    publishWebProjects: True
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+    zipAfterPublish: True
+    
+#perform publish of artifact
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
+  condition: succeededOrFailed() 
+
+- task: CmdLine@2
+  inputs:
+   script: 'docker system prune -a --force' 

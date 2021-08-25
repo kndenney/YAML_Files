@@ -7,6 +7,8 @@
 # 5. Publish Build Artifact 
 # So lets try and re-create that with the YAML stuffs
 
+#You may need to create a variable called Parameters.RestoreBuildProjects with a value of **/*.csproj when editing the pipeline for this to work
+
 trigger:
  - master
 

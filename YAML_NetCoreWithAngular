@@ -1,0 +1,78 @@
+# This YAML is an example of a .Net Core project WITH Angular in the project rather than as a separate application
+
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+  demands: npm
+
+variables:
+  RestoreBuildProjects: '**/*.csproj'
+  TestProjects: '**/*[Tt]ests/*.csproj'
+  ArtifactName: 'Drop'
+
+steps:
+  - task: UseDotNet@2
+    displayName: Use .Net Core 5.0.x SDK
+    inputs:
+      packageType: 'sdk'
+      version: '5.0.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: Restore
+    inputs:
+      command: 'restore'
+      projects: '$(RestoreBuildProjects)'
+      feedsToUse: 'select'
+ 
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '16.x'
+    displayName: 'Install Node.js'
+
+  - script: |
+      npm install -g @angular/cli
+      npm install
+      ng build --prod #--optimization=false
+    displayName: 'npm install and build'
+  
+  - task: DotNetCoreCLI@2
+    displayName: Build
+    inputs:
+      projects: '$(RestoreBuildProjects)'
+      arguments: '--configuration $(BuildConfiguration)'
+
+  - task: DotNetCoreCLI@2
+    displayName: Test
+    inputs:
+      command: test
+      projects: '$(TestProjects)'
+      arguments: '--configuration $(BuildConfiguration)'
+
+  # Copy files
+  # Copy files from a source folder to a target folder using patterns matching file paths (not folder paths)
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: $(System.DefaultWorkingDirectory)
+      contents: 'dist/**' # Pull the dist directory (Angular)
+      targetFolder: $(Build.ArtifactStagingDirectory)
+                
+        
+  # Publish build artifacts
+  # Publish build artifacts to Azure Pipelines or a Windows file share
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
+ 
+  - task: CopyFiles@2
+    inputs:
+      targetFolder: '$(Build.ArtifactStagingDirectory)'    
+
+  - task: PublishBuildArtifacts@1    
+    displayName: 'Publish Artifact: drop'
+    inputs:
+      PathtoPublish: '$(build.artifactstagingdirectory)'
+

@@ -1,4 +1,7 @@
-# This YAML is an example of a .Net Core project WITH Angular in the project rather than as a separate application
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
 
 trigger:
 - master
@@ -14,10 +17,10 @@ variables:
 
 steps:
   - task: UseDotNet@2
-    displayName: Use .Net Core 5.0.x SDK
+    displayName: Use .Net Core 3.1.x SDK
     inputs:
       packageType: 'sdk'
-      version: '5.0.x'
+      version: '3.1.x'
 
   - task: DotNetCoreCLI@2
     displayName: Restore
@@ -41,38 +44,28 @@ steps:
     displayName: Build
     inputs:
       projects: '$(RestoreBuildProjects)'
-      arguments: '--configuration $(BuildConfiguration)'
+      #arguments: '--configuration $(BuildConfiguration)'
 
   - task: DotNetCoreCLI@2
     displayName: Test
     inputs:
       command: test
       projects: '$(TestProjects)'
-      arguments: '--configuration $(BuildConfiguration)'
+      #arguments: '--configuration $(BuildConfiguration)'
 
-  # Copy files
-  # Copy files from a source folder to a target folder using patterns matching file paths (not folder paths)
-  - task: CopyFiles@2
+  #perform publish
+  - task: DotNetCoreCLI@2
+    displayName: Publish
     inputs:
-      sourceFolder: $(System.DefaultWorkingDirectory)
-      contents: 'dist/**' # Pull the dist directory (Angular)
-      targetFolder: $(Build.ArtifactStagingDirectory)
-                
-        
-  # Publish build artifacts
-  # Publish build artifacts to Azure Pipelines or a Windows file share
+      command: publish
+      publishWebProjects: True
+      arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+      zipAfterPublish: True
+      
+  #perform publish of artifact
   - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
- 
-  - task: CopyFiles@2
-    inputs:
-      targetFolder: '$(Build.ArtifactStagingDirectory)'    
-
-  - task: PublishBuildArtifacts@1    
-    displayName: 'Publish Artifact: drop'
+    displayName: 'Publish Artifact'
     inputs:
       PathtoPublish: '$(build.artifactstagingdirectory)'
+    condition: succeededOrFailed() 
 

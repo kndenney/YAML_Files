@@ -39,7 +39,7 @@ steps:
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/[.Net Project Name Containing ClientApp folder]/ClientApp/
     contents: '**/dist' # Pull the dist directory (Angular)
-    targetFolder: $(Build.ArtifactStagingDirectory)
+    targetFolder: $(Build.ArtifactStagingDirectory)/dist
 
 - task: Bash@3
   inputs:

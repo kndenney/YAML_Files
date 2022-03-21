@@ -17,11 +17,6 @@ steps:
 #The scripts to run must be in this order because we first install Node, then we install Angular,
 #then by running npm install we install all the Angular dependent packages in the project
 #then we build with the various build flags
-- script: |
-    npm install -g @angular/cli
-    npm install    
-    ng build --prod #--optimization=false
-  displayName: 'npm install and build'
 #Our working directory is Build.SourcesDirectory because that is like D:/a/i or whatever
 #so we put that as the base, then we go to the .Net Core Project that contains the Angular Client Application
 #and list that, then the ClientApp folder with a forward slash

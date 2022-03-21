@@ -1,4 +1,5 @@
 #To add a snippet of branch idenitification to the build pipeline releaes name use the below in a Powershell task:
+#https://www.visualstudiogeeks.com/DevOps/TeamServicesOneBuildDefinitionToRuleThemAll
 - task: PowerShell@2 
   inputs: 
     targetType: 'inline' 
